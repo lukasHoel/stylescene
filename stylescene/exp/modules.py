@@ -112,7 +112,12 @@ class UNet(nn.Module):
 
     for dec in self.decs:
       x0, x1 = outs.pop(), outs.pop()
-      x = torch.cat((self.upsample(x0), x1), dim=1)
+      x0 = self.upsample(x0)
+
+      if x0.shape[2] != x1.shape[2] or x0.shape[3] != x1.shape[3]:
+        x0 = torch.nn.functional.interpolate(x0, x1.shape[2:], mode='bilinear')
+
+      x = torch.cat((x0, x1), dim=1)
       x = dec(x)
       outs.append(x)
 

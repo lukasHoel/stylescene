@@ -4,6 +4,8 @@ import sys
 import logging
 from pathlib import Path
 import PIL
+import torchvision.transforms
+
 import dataset
 import modules
 
@@ -245,6 +247,22 @@ class Worker(co.mytorch.Worker):
   def get_eval_sets(self):
     logging.info("Create eval datasets")
     eval_sets = []
+
+    if "scannet" in self.eval_dsets:
+      from scannet.scannet_single_scene_dataset import ScanNet_Single_House_Dataset
+      d = ScanNet_Single_House_Dataset(
+        root_path="/home/hoellein/datasets/scannet/train/images",
+        scene="scene0673_00",
+        verbose=True,
+        transform_rgb=torchvision.transforms.ToTensor(),
+        transform_label=torchvision.transforms.ToTensor(),
+        resize=True,
+        resize_size=512,
+        max_images=1000,
+        min_images=1
+      )
+      return [d]
+
     if "tat" in self.eval_dsets:
       for dset in config.tat_eval_sets:
         dset = self.get_eval_set_tat(dset, "all")

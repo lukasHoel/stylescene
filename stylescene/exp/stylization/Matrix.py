@@ -29,6 +29,8 @@ class CNN(nn.Module):
     outx = outx.view(outx.size(0),-1)
     
     skip = int(feat.shape[-1] // 100000)
+    if skip == 0:
+      skip = 1
     xyz = xyz[:,::skip,:].contiguous()
     feat = feat[:,:,::skip].contiguous()
     outy = self.pointnet(xyz, feat)

@@ -154,6 +154,7 @@ class Dataset(co.mytorch.BaseDataset):
     points = np.take(points, y, axis=1)
     points = np.take(points, x, axis=2)
     emb = emb.transpose(1,0,2,3)
+
     self.points = points.reshape(-1, 3)
     self.feats = emb.reshape(256, -1)
     del points
@@ -270,6 +271,6 @@ class Dataset(co.mytorch.BaseDataset):
     tgt_width = min(tgt_dm.shape[1], patch[3]) - patch[2]
     ret["src"] = np.zeros((3, tgt_height, tgt_width), dtype=np.float32)
     ret["tgt"] = load(self.tgt_im_paths[idx])
-  
+
     return ret
 
