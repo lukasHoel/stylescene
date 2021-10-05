@@ -27,6 +27,9 @@ class Worker(co.mytorch.Worker):
   def __init__(
     self,
     train_dsets,
+    root_scannet_path=None,
+    scannet_scene=None,
+    eval_style_image_path=None,
     eval_dsets="",
     train_n_nbs=1,
     train_nbs_mode="argmax",
@@ -45,6 +48,10 @@ class Worker(co.mytorch.Worker):
       eval_device=config.eval_device,
       **kwargs,
     )
+
+    self.root_scannet_path = root_scannet_path
+    self.eval_style_image_path = eval_style_image_path
+    self.scannet_scene = scannet_scene
 
     self.train_dsets = train_dsets
     self.eval_dsets = eval_dsets
@@ -251,11 +258,12 @@ class Worker(co.mytorch.Worker):
     if "scannet" in self.eval_dsets:
       from scannet.scannet_single_scene_dataset import ScanNet_Single_House_Dataset
       d = ScanNet_Single_House_Dataset(
-        root_path="/home/hoellein/datasets/scannet/train/images",
-        scene="scene0673_00",
+        root_path=self.root_scannet_path,
+        scene=self.scannet_scene,
+        style_path=self.eval_style_image_path,
         verbose=True,
         transform_rgb=torchvision.transforms.ToTensor(),
-        transform_label=torchvision.transforms.ToTensor(),
+        transform_depth=torchvision.transforms.ToTensor(),
         resize=True,
         resize_size=512,
         max_images=1000,
@@ -374,6 +382,9 @@ if __name__ == "__main__":
   parser.add_argument(
     "--eval-dsets", nargs="+", type=str, default=["tat", "tat-subseq"]
   )
+  parser.add_argument('-dp', '--data_path', type=str, default="/home/hoellein/datasets/scannet/train/_additional")
+  parser.add_argument('-s', '--scene', type=str, default="scene0027_00")
+  parser.add_argument('-is', '--filename_style', type=str, default="/home/hoellein/datasets/styles/120styles/5.jpg")
   parser.add_argument("--train-n-nbs", type=int, default=5)
   parser.add_argument("--train-scale", type=float, default=0.25)
   parser.add_argument("--train-patch", type=int, default=192)
@@ -394,6 +405,9 @@ if __name__ == "__main__":
     train_patch=args.train_patch,
     eval_n_nbs=args.eval_n_nbs,
     eval_scale=args.eval_scale,
+    root_scannet_path=args.data_path,
+    scannet_scene=args.scene,
+    eval_style_image_path=args.filename_style
   )
   worker.log_debug = args.log_debug
   worker.save_frequency = co.mytorch.Frequency(hours=1)
