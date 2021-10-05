@@ -27,6 +27,7 @@ class ScanNetDataset(Abstract_Dataset):
                  style_path=None,
                  resize=False,
                  resize_size=(256, 256),
+                 train=False,
                  cache=False,
                  verbose=False):
 
@@ -35,6 +36,7 @@ class ScanNetDataset(Abstract_Dataset):
                                   style_path=style_path,
                                   transform_rgb=transform_rgb,
                                   transform_depth=transform_depth,
+                                  train=train,
                                   resize=resize,
                                   resize_size=resize_size,
                                   cache=cache,

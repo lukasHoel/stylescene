@@ -27,6 +27,7 @@ class Abstract_Dataset(Dataset, ABC):
                  style_path=None,
                  resize=False,
                  resize_size=(256, 256),
+                 train=False,
                  cache=False,
                  verbose=False):
         # save all constructor arguments
@@ -42,6 +43,7 @@ class Abstract_Dataset(Dataset, ABC):
         self.style_path = style_path
         self.use_cache = cache
         self.cache = {}
+        self.train = train
 
         from stylization.vgg_models import encoder3
         self.enc_net = encoder3()
@@ -293,12 +295,12 @@ class Abstract_Dataset(Dataset, ABC):
 
             # raise ValueError(points.shape, emb.shape)  # ((226, 273, 490, 3), (226, 256, 72, 124))
 
-            feats = self.enc_net(rgb.unsqueeze(0))
+            feats = self.enc_net(rgb.unsqueeze(0)).detach()
             H2, W2 = feats.shape[2:4]
             feats = feats.permute(1, 0, 2, 3)
             feats = feats.reshape(256, -1)
 
-            points2 = unproject(extrinsics.unsqueeze(0), intrinsics.unsqueeze(0), depth.unsqueeze(0))
+            points2 = unproject(extrinsics.unsqueeze(0), intrinsics.unsqueeze(0), depth.unsqueeze(0)).detach()
             H1, W1 = points2.shape[1:3]
             y = [int(round(y)) for y in np.array(list(range(H2))) / (H2 - 1) * (H1 - 1)]
             x = [int(round(x)) for x in np.array(list(range(W2))) / (W2 - 1) * (W1 - 1)]
@@ -314,7 +316,7 @@ class Abstract_Dataset(Dataset, ABC):
             h_range = torch.arange(0, h, dtype=torch.float) / (h - 1.0) * 2.0 - 1.0
             v, u = torch.meshgrid(h_range, w_range)
             uv_id = torch.stack([u, v, depth.squeeze()], 2)
-            points = uv_id
+            points = uv_id.detach()
             H1, W1 = points.shape[0:2]
             y = [int(round(y)) for y in np.array(list(range(H2))) / (H2 - 1) * (H1 - 1)]
             x = [int(round(x)) for x in np.array(list(range(W2))) / (W2 - 1) * (W1 - 1)]
@@ -324,9 +326,11 @@ class Abstract_Dataset(Dataset, ABC):
 
             style = Image.open(self.style_path)
             style = self.transform_rgb(style)
-            # TODO: if eval style has another dimension with multiple style images.
-            # TODO: if train this is not present
-            style = style.unsqueeze(0)
+
+            # if eval style has another dimension with multiple style images.
+            # if train this is not present
+            if not self.train:
+                style = style.unsqueeze(0)
 
             result = {
                 "tgt": rgb,

@@ -83,6 +83,21 @@ class TrainSampler(torch.utils.data.Sampler):
         return iter(ind)
 
 
+class RepeatingSampler(torch.utils.data.Sampler):
+    def __init__(self, indices, index_repeat):
+        super().__init__(indices)
+        if isinstance(index_repeat, int):
+            self.indices = indices * index_repeat
+        else:
+            raise ValueError('unsupported index_repeat type', index_repeat)
+
+    def __iter__(self):
+        return iter(self.indices)
+
+    def __len__(self):
+        return len(self.indices)
+
+
 class WorkerObjects(object):
     def __init__(
         self, *, net_f=None, optim_f=None, lr_scheduler_f=None, net_init_f=None
@@ -517,6 +532,21 @@ class Worker(object):
         pass
 
     def get_train_data_loader(self, dset, iter):
+
+        if "ScanNet" in dset.__class__.__name__:
+            return torch.utils.data.DataLoader(
+                dset,
+                batch_size=self.train_batch_size,
+                shuffle=False,
+                sampler=RepeatingSampler(
+                    indices=list(range(len(dset))),
+                    index_repeat=int(np.ceil(1.0 * self.n_train_iters / len(dset)))
+                ),
+                num_workers=self.num_workers,
+                drop_last=True,
+                pin_memory=True,
+            )
+
         return torch.utils.data.DataLoader(
             dset,
             batch_size=self.train_batch_size,
@@ -739,9 +769,16 @@ class Worker(object):
             torch.set_rng_state(state["cpu_rng_state"].to("cpu"))
             if torch.cuda.is_available():
                 torch.cuda.set_rng_state(state["gpu_rng_state"].to("cpu"))
-
-
-
+        elif resume:
+            net_paths = self.get_net_paths(net_root=Path("/home/hoellein/git/stylescene/stylescene/exp/experiments/tat_nbs5_s0.25_p192_fixed_vgg16unet3_unet4.64.3"))
+            net_path, iter_ckpt = net_paths['last']
+            logging.info(
+                f"[RESUME] loading net for iter {iter_ckpt}: {net_path}"
+            )
+            state_dict = torch.load(
+                str(net_path), map_location=self.eval_device
+            )
+            net.load_state_dict(state_dict)
 
         # update lr_scheduler
         if lr_scheduler is not None:

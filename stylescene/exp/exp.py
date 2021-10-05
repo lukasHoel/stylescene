@@ -1,3 +1,5 @@
+import os.path
+
 import torch
 import numpy as np
 import sys
@@ -225,6 +227,22 @@ class Worker(co.mytorch.Worker):
     if "tat" in self.train_dsets:
       for dset in config.tat_train_sets:
         dsets.append(self.get_train_set_tat(dset))
+    if "scannet" in self.train_dsets:
+      from scannet.scannet_single_scene_dataset import ScanNet_Single_House_Dataset
+      d = ScanNet_Single_House_Dataset(
+        root_path=self.root_scannet_path,
+        scene=self.scannet_scene,
+        style_path=self.eval_style_image_path,
+        verbose=True,
+        transform_rgb=torchvision.transforms.ToTensor(),
+        transform_depth=torchvision.transforms.ToTensor(),
+        train=True,
+        resize=True,
+        resize_size=512,
+        max_images=1000,
+        min_images=1
+      )
+      return d
     return dsets
 
   def get_eval_set_tat(self, dset, mode):
@@ -385,6 +403,7 @@ if __name__ == "__main__":
   parser.add_argument('-dp', '--data_path', type=str, default="/home/hoellein/datasets/scannet/train/_additional")
   parser.add_argument('-s', '--scene', type=str, default="scene0027_00")
   parser.add_argument('-is', '--filename_style', type=str, default="/home/hoellein/datasets/styles/120styles/5.jpg")
+  parser.add_argument('-e', '--epochs', type=int, default=-1)
   parser.add_argument("--train-n-nbs", type=int, default=5)
   parser.add_argument("--train-scale", type=float, default=0.25)
   parser.add_argument("--train-patch", type=int, default=192)
@@ -393,7 +412,10 @@ if __name__ == "__main__":
   parser.add_argument("--log-debug", type=str, nargs="*", default=[])
   args = parser.parse_args()
 
-  experiment_name = f"{'+'.join(args.train_dsets)}_nbs{args.train_n_nbs}_s{args.train_scale}_p{args.train_patch}_{args.net}"
+  if 'scannet' not in args.train_dsets:
+    experiment_name = f"{'+'.join(args.train_dsets)}_nbs{args.train_n_nbs}_s{args.train_scale}_p{args.train_patch}_{args.net}"
+  else:
+    experiment_name = f"scannet_{args.scene}_{os.path.basename(args.filename_style)}"
 
   worker = Worker(
     experiments_root=args.experiments_root,
@@ -401,6 +423,7 @@ if __name__ == "__main__":
     train_dsets=args.train_dsets,
     eval_dsets=args.eval_dsets,
     train_n_nbs=args.train_n_nbs,
+    n_train_iters=-args.epochs if args.epochs > 0 else 1000000,
     train_scale=args.train_scale,
     train_patch=args.train_patch,
     eval_n_nbs=args.eval_n_nbs,
@@ -410,7 +433,7 @@ if __name__ == "__main__":
     eval_style_image_path=args.filename_style
   )
   worker.log_debug = args.log_debug
-  worker.save_frequency = co.mytorch.Frequency(hours=1)
+  worker.save_frequency = co.mytorch.Frequency(hours=1, iter=1000)
   worker.eval_frequency = co.mytorch.Frequency(hours=1)
   worker.train_batch_size = 1
   worker.eval_batch_size = 1
