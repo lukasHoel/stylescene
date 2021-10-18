@@ -31,6 +31,7 @@ class Worker(co.mytorch.Worker):
     train_dsets,
     root_scannet_path=None,
     scannet_scene=None,
+    matterport_region=0,
     eval_style_image_path=None,
     eval_dsets="",
     train_n_nbs=1,
@@ -54,6 +55,7 @@ class Worker(co.mytorch.Worker):
     self.root_scannet_path = root_scannet_path
     self.eval_style_image_path = eval_style_image_path
     self.scannet_scene = scannet_scene
+    self.matterport_region = matterport_region
 
     self.train_dsets = train_dsets
     self.eval_dsets = eval_dsets
@@ -243,6 +245,23 @@ class Worker(co.mytorch.Worker):
         min_images=1
       )
       return d
+    if "matterport" in self.train_dsets:
+      from scannet.matterport_single_scene_dataset import Matterport_Single_House_Dataset
+      d = Matterport_Single_House_Dataset(
+        root_path=self.root_scannet_path,
+        scene=self.scannet_scene,
+        region_index=self.matterport_region,
+        style_path=self.eval_style_image_path,
+        verbose=True,
+        transform_rgb=torchvision.transforms.ToTensor(),
+        transform_depth=torchvision.transforms.ToTensor(),
+        train=True,
+        resize=True,
+        resize_size=512,
+        max_images=1000,
+        min_images=1
+      )
+      return d
     return dsets
 
   def get_eval_set_tat(self, dset, mode):
@@ -288,6 +307,22 @@ class Worker(co.mytorch.Worker):
         min_images=1
       )
       return [d]
+    if "matterport" in self.train_dsets:
+      from scannet.matterport_single_scene_dataset import Matterport_Single_House_Dataset
+      d = Matterport_Single_House_Dataset(
+        root_path=self.root_scannet_path,
+        scene=self.scannet_scene,
+        region_index=self.matterport_region,
+        style_path=self.eval_style_image_path,
+        verbose=True,
+        transform_rgb=torchvision.transforms.ToTensor(),
+        transform_depth=torchvision.transforms.ToTensor(),
+        resize=True,
+        resize_size=512,
+        max_images=1000,
+        min_images=1
+      )
+      return d
 
     if "tat" in self.eval_dsets:
       for dset in config.tat_eval_sets:
@@ -402,6 +437,7 @@ if __name__ == "__main__":
   )
   parser.add_argument('-dp', '--data_path', type=str, default="/home/hoellein/datasets/scannet/train/_additional")
   parser.add_argument('-s', '--scene', type=str, default="scene0027_00")
+  parser.add_argument('-r', '--region', type=int, default=0)
   parser.add_argument('-is', '--filename_style', type=str, default="/home/hoellein/datasets/styles/120styles/5.jpg")
   parser.add_argument('-e', '--epochs', type=int, default=-1)
   parser.add_argument("--train-n-nbs", type=int, default=5)
@@ -412,7 +448,7 @@ if __name__ == "__main__":
   parser.add_argument("--log-debug", type=str, nargs="*", default=[])
   args = parser.parse_args()
 
-  if 'scannet' not in args.train_dsets:
+  if 'scannet' not in args.train_dsets and 'matterport' not in args.train_dsets:
     experiment_name = f"{'+'.join(args.train_dsets)}_nbs{args.train_n_nbs}_s{args.train_scale}_p{args.train_patch}_{args.net}"
   else:
     experiment_name = f"scannet_{args.scene}_{os.path.basename(args.filename_style)}"
@@ -430,6 +466,7 @@ if __name__ == "__main__":
     eval_scale=args.eval_scale,
     root_scannet_path=args.data_path,
     scannet_scene=args.scene,
+    matterport_region=args.region,
     eval_style_image_path=args.filename_style
   )
   worker.log_debug = args.log_debug

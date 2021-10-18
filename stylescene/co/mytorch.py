@@ -533,7 +533,7 @@ class Worker(object):
 
     def get_train_data_loader(self, dset, iter):
 
-        if "ScanNet" in dset.__class__.__name__:
+        if "ScanNet" in dset.__class__.__name__ or 'Matterport' in dset.__class__.__name__:
             return torch.utils.data.DataLoader(
                 dset,
                 batch_size=self.train_batch_size,
