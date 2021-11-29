@@ -6,7 +6,7 @@ from torch.utils.data import Dataset
 
 from PIL import Image
 
-from scannet.utils import unproject, get_euler_angles, get_image_transform
+from scannet.utils import unproject, reproject, get_euler_angles, get_image_transform
 
 from tqdm.auto import tqdm
 
@@ -55,6 +55,7 @@ class Abstract_Dataset(Dataset, ABC):
 
         # create data for this dataset
         self.create_data()
+        #self.calc_points()
 
         if self.use_cache:
             print("Preloading all into cache")
@@ -248,12 +249,57 @@ class Abstract_Dataset(Dataset, ABC):
     def __len__(self):
         return self.size
 
-    def __getitem__(self, item):
-        if item not in self.cache:
+    def calc_points(self):
+
+        feats_list = []
+        points_list = []
+
+        for i in tqdm(range(self.size)):
+            if i % 10 != 0:
+                pass
+                #continue
+
+            rgb, depth, extrinsics, intrinsics = self.__getitem__(i, raw=True)
+
+            feats = self.enc_net(rgb.unsqueeze(0)).detach().cpu()
+            H2, W2 = feats.shape[2:4]
+            feats = feats.permute(1, 0, 2, 3)
+            feats = feats.reshape(256, -1)
+            feats_list.append(feats)
+
+            points2 = unproject(extrinsics.unsqueeze(0), intrinsics.unsqueeze(0), depth.unsqueeze(0)).detach().cpu()
+            points_list.append(points2)
+
+        self.feats = torch.cat(feats_list, dim=1)
+
+        points = torch.cat(points_list, dim=0)
+        H1, W1 = points.shape[1:3]
+        y = [int(round(y)) for y in np.array(list(range(H2))) / (H2 - 1) * (H1 - 1)]
+        x = [int(round(x)) for x in np.array(list(range(W2))) / (W2 - 1) * (W1 - 1)]
+        points = np.take(points, y, axis=1)
+        points = np.take(points, x, axis=2)
+        self.points = points[:, :, :, :3].reshape(-1, 3)
+
+        self.H2 = H2
+        self.W2 = W2
+
+        if self.train:
+            skip = max(int(self.points.shape[0] // 100000), 1)
+            self.points = self.points[::skip, :].float()
+            self.feats = self.feats[:, ::skip].float()
+
+        print('finished calc points', self.points.shape, self.feats.shape)
+
+    def __getitem__(self, item, only_pose=False, raw=False):
+        if item not in self.cache or only_pose:
             self.prepare_getitem(item)
 
             extrinsics = self.load_extrinsics(item)
             extrinsics = torch.from_numpy(extrinsics)
+
+            if only_pose:
+                return extrinsics
+
             intrinsics = self.load_intrinsics(item)
             intrinsics = torch.from_numpy(intrinsics)
 
@@ -285,6 +331,9 @@ class Abstract_Dataset(Dataset, ABC):
             if self.transform_depth:
                 depth = self.transform_depth(depth)
 
+            if raw:
+                return rgb, depth, extrinsics, intrinsics
+
             # TODO create
             # points2: 3d projection of each pixel, use the unproject function. then also normalize it by biggest coordinate value in xyz
             # feats: vgg features of the color image
@@ -311,18 +360,33 @@ class Abstract_Dataset(Dataset, ABC):
             points2 = points2.reshape(-1, 3)
 
             # TODO FIXME points: simple uniform sampling map, if we want to train this and use reprojection, we have to use reprojected sampling map!
+            if not self.train or True:
+                h, w = rgb.shape[1:]
+                w_range = torch.arange(0, w, dtype=torch.float) / (w - 1.0) * 2.0 - 1.0
+                h_range = torch.arange(0, h, dtype=torch.float) / (h - 1.0) * 2.0 - 1.0
+                v, u = torch.meshgrid(h_range, w_range)
+                uv_id = torch.stack([u, v, depth.squeeze()], 2)
+                points = uv_id.detach()
+
+                H1, W1 = points.shape[0:2]
+                y = [int(round(y)) for y in np.array(list(range(H2))) / (H2 - 1) * (H1 - 1)]
+                x = [int(round(x)) for x in np.array(list(range(W2))) / (W2 - 1) * (W1 - 1)]
+                points = np.take(points, y, axis=0)
+                points = np.take(points, x, axis=1)
+                points = points.reshape(-1, 3)
+
+            """
+            # how is the sampling map defined: we want to map the color image (tgt) TO ANOTHER VIEW
+            # (a) choose any neighboring view of the color image
+            # (b) use reproject function to find a map that maps the color image to that view
+            # (c) return this is the new points
+            neighbor = item + 2 if self.train else item
+            if neighbor >= self.__len__():
+                neighbor = item - 2
+            extr_src = self.__getitem__(neighbor, only_pose=True)
             h, w = rgb.shape[1:]
-            w_range = torch.arange(0, w, dtype=torch.float) / (w - 1.0) * 2.0 - 1.0
-            h_range = torch.arange(0, h, dtype=torch.float) / (h - 1.0) * 2.0 - 1.0
-            v, u = torch.meshgrid(h_range, w_range)
-            uv_id = torch.stack([u, v, depth.squeeze()], 2)
-            points = uv_id.detach()
-            H1, W1 = points.shape[0:2]
-            y = [int(round(y)) for y in np.array(list(range(H2))) / (H2 - 1) * (H1 - 1)]
-            x = [int(round(x)) for x in np.array(list(range(W2))) / (W2 - 1) * (W1 - 1)]
-            points = np.take(points, y, axis=0)
-            points = np.take(points, x, axis=1)
-            points = points.reshape(-1, 3)
+            points = reproject(extr_src.unsqueeze(0), intrinsics.unsqueeze(0), self.points, h, w)
+            """
 
             style = Image.open(self.style_path)
             style = self.transform_rgb(style)
@@ -345,6 +409,7 @@ class Abstract_Dataset(Dataset, ABC):
                 self.cache[item] = result
 
             self.finalize_getitem(item)
+
             return result
         else:
             return self.cache[item]

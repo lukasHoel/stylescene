@@ -562,11 +562,11 @@ class Worker(object):
     def get_eval_data_loader(self, dset):
         return torch.utils.data.DataLoader(
             dset,
-            batch_size=self.eval_batch_size,
+            batch_size=1, #self.eval_batch_size
             shuffle=False,
-            num_workers=self.num_workers,
+            num_workers=0, #self.num_workers
             drop_last=False,
-            pin_memory=True,
+            pin_memory=False, #True
         )
 
     def format_err_str(self, errs, div=1):
@@ -644,6 +644,7 @@ class Worker(object):
             logging.info("-" * 80)
             log_datetime()
             logging.info("Eval iter %d" % iter)
+
             eval_loader = self.get_eval_data_loader(eval_set)
 
             net = net.to(self.eval_device)
@@ -658,11 +659,11 @@ class Worker(object):
             )
             self.stopwatch.stop("callback")
 
-            # torch.cuda.empty_cache()
-            # logging.info("--------- init ----------")
-            # log_cuda_mem()
-            # log_tensor_memory_report()
-            # logging.info("-------------------------")
+            torch.cuda.empty_cache()
+            #logging.info("--------- init ----------")
+            #log_cuda_mem()
+            #log_tensor_memory_report()
+            #logging.info("-------------------------")
 
             eta = utils.ETA(length=len(eval_loader))
             self.stopwatch.start("total")
@@ -675,16 +676,16 @@ class Worker(object):
                     torch.cuda.empty_cache()
 
                 self.copy_data(data, device=self.eval_device, train=False)
-                # logging.info("--------- copy data ----------")
-                # log_cuda_mem()
+                #logging.info("--------- copy data ----------")
+                #log_cuda_mem()
                 self.stopwatch.stop("data")
 
                 self.stopwatch.start("forward")
                 output = self.net_forward(net, train=False, iter=iter)
                 if "cuda" in self.eval_device:
                     torch.cuda.synchronize()
-                # logging.info("--------- forward ----------")
-                # log_cuda_mem()
+                #logging.info("--------- forward ----------")
+                #log_cuda_mem()
                 self.stopwatch.stop("forward")
 
                 self.stopwatch.start("loss")
@@ -697,8 +698,8 @@ class Worker(object):
                         err_items[k] = [v.item() for v in errs[k]]
                 del errs
                 mean_loss.append(err_items)
-                # logging.info("--------- loss ----------")
-                # log_cuda_mem()
+                #logging.info("--------- loss ----------")
+                #log_cuda_mem()
                 self.stopwatch.stop("loss")
 
                 eta.update(batch_idx)
@@ -721,8 +722,8 @@ class Worker(object):
                 self.stopwatch.stop("callback")
 
                 self.free_copied_data()
-                # logging.info("--------- end ----------")
-                # log_cuda_mem()
+                #logging.info("--------- end ----------")
+                #log_cuda_mem()
 
                 self.stopwatch.start("data")
             self.stopwatch.stop("total")

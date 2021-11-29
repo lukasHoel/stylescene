@@ -1,4 +1,4 @@
-cd ~/git/stylescene/stylescene/exp;python exp.py --net fixed_vgg16unet3_unet4.64.3 --cmd eval --iter last --train-dsets scannet --eval-dsets scannet --scene scene0027_00 --filename_style /home/hoellein/datasets/styles/120styles/5.jpg
+#cd ~/git/stylescene/stylescene/exp;python exp.py --net fixed_vgg16unet3_unet4.64.3 --cmd eval --iter last --train-dsets scannet --eval-dsets scannet --scene scene0027_00 --filename_style /home/hoellein/datasets/styles/120styles/5.jpg
 #cd ~/git/stylescene/stylescene/exp;python exp.py --net fixed_vgg16unet3_unet4.64.3 --cmd eval --iter last --train-dsets scannet --eval-dsets scannet --scene scene0291_00 --filename_style /home/hoellein/datasets/styles/120styles/20.jpg
 #cd ~/git/stylescene/stylescene/exp;python exp.py --net fixed_vgg16unet3_unet4.64.3 --cmd eval --iter last --train-dsets scannet --eval-dsets scannet --scene scene0293_00 --filename_style /home/hoellein/datasets/styles/120styles/50.jpg
 #cd ~/git/stylescene/stylescene/exp;python exp.py --net fixed_vgg16unet3_unet4.64.3 --cmd eval --iter last --train-dsets scannet --eval-dsets scannet --scene scene0362_02 --filename_style /home/hoellein/datasets/styles/120styles/1.jpg
@@ -7,4 +7,9 @@ cd ~/git/stylescene/stylescene/exp;python exp.py --net fixed_vgg16unet3_unet4.64
 #cd ~/git/stylescene/stylescene/exp;python exp.py --net fixed_vgg16unet3_unet4.64.3 --cmd eval --iter last --train-dsets scannet --eval-dsets scannet --scene scene0568_02 --filename_style /home/hoellein/datasets/styles/120styles/15.jpg
 #cd ~/git/stylescene/stylescene/exp;python exp.py --net fixed_vgg16unet3_unet4.64.3 --cmd eval --iter last --train-dsets scannet --eval-dsets scannet --scene scene0592_00 --filename_style /home/hoellein/datasets/styles/120styles/3.jpg
 #cd ~/git/stylescene/stylescene/exp;python exp.py --net fixed_vgg16unet3_unet4.64.3 --cmd eval --iter last --train-dsets scannet --eval-dsets scannet --scene scene0673_00 --filename_style /home/hoellein/datasets/styles/3style/14-2.jpg
+#cd ~/git/stylescene/stylescene/exp;python exp.py --net fixed_vgg16unet3_unet4.64.3 --cmd eval --iter last --train-dsets scannet --eval-dsets scannet --scene scene0568_01 --filename_style /home/hoellein/datasets/styles/120styles/58.jpg
+#cd ~/git/stylescene/stylescene/exp;python exp.py --net fixed_vgg16unet3_unet4.64.3 --cmd eval --iter last --train-dsets scannet --eval-dsets scannet --scene scene0568_01 --filename_style /home/hoellein/datasets/styles/120styles/63.jpg
+#cd ~/git/stylescene/stylescene/exp;python exp.py --net fixed_vgg16unet3_unet4.64.3 --cmd eval --iter last --train-dsets scannet --eval-dsets scannet --scene scene0531_00 --filename_style /home/hoellein/datasets/styles/120styles/116.jpg
+
+cd ~/git/stylescene/stylescene/exp;python exp.py --net fixed_vgg16unet3_unet4.64.3 --cmd eval --iter last --train-dsets scannet --eval-dsets scannet --scene scene0592_00 --filename_style /home/hoellein/datasets/styles/120styles/19.jpg
 

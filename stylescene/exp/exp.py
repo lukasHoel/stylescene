@@ -241,7 +241,7 @@ class Worker(co.mytorch.Worker):
         train=True,
         resize=True,
         resize_size=512,
-        max_images=1000,
+        max_images=10000,
         min_images=1
       )
       return d
@@ -303,9 +303,10 @@ class Worker(co.mytorch.Worker):
         transform_depth=torchvision.transforms.ToTensor(),
         resize=True,
         resize_size=512,
-        max_images=1000,
+        max_images=10000,
         min_images=1
       )
+      print('will return dataset now', d)
       return [d]
     if "matterport" in self.train_dsets:
       from scannet.matterport_single_scene_dataset import Matterport_Single_House_Dataset
@@ -322,7 +323,7 @@ class Worker(co.mytorch.Worker):
         max_images=1000,
         min_images=1
       )
-      return d
+      return [d]
 
     if "tat" in self.eval_dsets:
       for dset in config.tat_eval_sets:
@@ -451,7 +452,7 @@ if __name__ == "__main__":
   if 'scannet' not in args.train_dsets and 'matterport' not in args.train_dsets:
     experiment_name = f"{'+'.join(args.train_dsets)}_nbs{args.train_n_nbs}_s{args.train_scale}_p{args.train_patch}_{args.net}"
   else:
-    experiment_name = f"scannet_{args.scene}_{os.path.basename(args.filename_style)}"
+    experiment_name = f"scannet_{args.scene}_{args.region}_{os.path.basename(args.filename_style)}"
 
   worker = Worker(
     experiments_root=args.experiments_root,
